@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Member {
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  username      String         @unique
+  password      String         // Hashed password
+  role          String         @default("USER") // ADMIN, USER, BENDAHARA
+  phoneNumber   String?        // Untuk notifikasi WA/SMS
+  address       String?        // Nomor Rumah / Blok
+  isActive      Boolean        @default(true)
+  
+  // Relations
+  payments      Payment[]      // Riwayat iuran lunas
+  transactions  Transaction[]  // Log percobaan pembayaran (Midtrans/QRIS)
+  loans         Loan[]         // Riwayat pinjaman
+  notifications Notification[] // Notifikasi pribadi
+  
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+// 2. IURAN BULANAN (Data Transaksi Lunas)
+model Payment {
+  id          Int      @id @default(autoincrement())
+  amount      Float    @default(0)
+  month       Int      // 1-12
+  year        Int      // 2023-2026
+  category    String   @default("IURAN_WAJIB") // KEAMANAN, SAMPAH, SOSIAL
+  
+  // Link ke Member
+  memberId    Int
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  // Link ke log transaksi otomatis
+  transactionId String? @unique // ID dari Midtrans/Xendit
+  
+  createdAt   DateTime @default(now())
+
+  @@unique([memberId, month, year, category]) 
+}
+
+// 3. TRANSACTION (Log Pembayaran Otomatis - CRITICAL UNTUK PAYMENT GATEWAY)
+model Transaction {
+  id            String   @id @default(cuid()) // Order ID untuk Payment Gateway
+  memberId      Int
+  member        Member   @relation(fields: [memberId], references: [id])
+  
+  amount        Float
+  status        String   @default("PENDING") // PENDING, SETTLEMENT, EXPIRED, CANCEL
+  paymentType   String?  // qris, bank_transfer, gopay
+  snapToken     String?  // Token dari Midtrans
+  
+  // Payload iuran (Misal: Bayar Jan-Maret sekaligus)
+  payload       Json?    // Menyimpan detail bulan/tahun yang dibayar
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// 4. PENGELUARAN (Expenses)
+model Expense {
+  id          Int      @id @default(autoincrement())
+  description String
+  amount      Float
+  category    String   // OPERASIONAL, PERBAIKAN, SOSIAL, GAJI_PETUGAS
+  date        DateTime @default(now())
+  year        Int
+  receiptPath String?  // Link ke foto bukti/nota di cloud storage
+  
+  createdAt   DateTime @default(now())
+}
+
+// 5. PEMASUKAN LAIN (Extra Income)
+model ExtraIncome {
+  id          Int      @id @default(autoincrement())
+  source      String
+  category    String   // DONATUR, SPONSOR, BUNGA_BANK
+  amount      Float
+  date        DateTime @default(now())
+  description String?
+  year        Int
+}
+
+// 6. LOANS & REPAYMENTS (Pinjaman)
+model Loan {
+  id            Int         @id @default(autoincrement())
+  amount        Float       // Pokok pinjaman
+  interest      Float       @default(0) // Jika ada bunga
+  totalToPay    Float       // Total yang harus dikembalikan
+  dateBorrowed  DateTime    @default(now())
+  dueDate       DateTime?
+  status        String      @default("PENDING") // PENDING, ACTIVE, PAID, OVERDUE
+  description   String?
+  
+  memberId      Int
+  member        Member      @relation(fields: [memberId], references: [id])
+  repayments    Repayment[]
+  
+  createdAt     DateTime    @default(now())
+}
+
+model Repayment {
+  id        Int      @id @default(autoincrement())
+  amount    Float
+  datePaid  DateTime @default(now())
+  method    String   @default("CASH") // CASH, TRANSFER
+  loanId    Int
+  loan      Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+}
+
+// 7. NOTIFIKASI (Untuk Reminder Tagihan)
+model Notification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  type      String   // BILLING, ANNOUNCEMENT, LOAN_DUE
+  
+  memberId  Int
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+}
+
+// 8. SETTINGS (Konfigurasi Global RT)
+model Setting {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique // Contoh: "MONTHLY_DUES_AMOUNT"
+  value       String   // Contoh: "25000"
+  description String?
+  updatedAt   DateTime @updatedAt
+}
