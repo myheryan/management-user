@@ -180,6 +180,8 @@ export const resolvers = {
       const totalExpense = expenses._sum.amount || 0;
       const totalLoans = loans._sum.amount || 0;
 
+      console.log(expenses);
+
       return {
         totalIncome,
         totalExpense,

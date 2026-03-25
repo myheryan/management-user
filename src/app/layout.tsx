@@ -1,6 +1,6 @@
 // app/layout.tsx
 import type { Metadata } from "next";
-import { Inter, Open_Sans } from "next/font/google";
+import { Inter, Open_Sans, Poppins } from "next/font/google";
 import { Toaster } from "sonner";
 import Navbar from "@/components/navbar";
 import "./globals.css";
@@ -9,7 +9,12 @@ import "./globals.css";
 import { ApolloWrapper } from "@/lib/apollo-provider";
 import { cn } from "@/lib/utils";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  variable: '--font-sans', // Kita buat sebagai CSS Variable
+});
+
 export const metadata: Metadata = {
   title: "Kas Pemuda RT 07",
   description: "Dashboard Pembukuan Kas Pemuda RT 07",
@@ -21,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={cn("font-sans", inter.variable)}>
+    <html lang="id" className={cn("font-sans", poppins.variable)}>
       <body className="font-sans antialiased bg-slate-200 text-slate-900">
         <Toaster 
           position="top-right" 

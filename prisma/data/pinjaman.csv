@@ -1,0 +1,5 @@
+Nama Peminjam;Tanggal Pinjam;Pokok Pinjaman;Total Harus Bayar;Sisa Hutang;Status
+Budi Sudarsono;12/01/2023;1000000;1000000;0;PAID
+Siti Aminah;05/03/2024;2500000;2500000;500000;ACTIVE
+Agus Setiawan;20/11/2025;500000;500000;500000;PENDING
+Iwan Fals;15/02/2026;3000000;3000000;3000000;OVERDUE
